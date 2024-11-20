@@ -29,30 +29,30 @@ import java.awt.image.Raster;
 class X11TranslucentWindow extends JWindow implements TranslucentWindow {
 
     private static final long serialVersionUID = 1L;
-
-    /**
-     * To view images.
-     */
     private X11NativeImage image;
-
     private static final X11 x11 = X11.INSTANCE;
     private final X11.Display dpy = x11.XOpenDisplay(null);
     private X11.Window win = null;
     private float alpha = 1.0f;
     private final JWindow alphaWindow = this;
+    private Memory buffer;
+    private int[] pixels;
 
     public X11TranslucentWindow() {
         super(WindowUtils.getAlphaCompatibleGraphicsConfiguration());
         init();
-
         setBackground(new Color(0, 0, 0, 0));
+        JPanel panel = createPanel();
+        setContentPane(panel);
+        setLayout(new BorderLayout());
+    }
 
+    private JPanel createPanel() {
         JPanel panel = new JPanel() {
             private static final long serialVersionUID = 1L;
 
             @Override
             protected void paintComponent(final Graphics g) {
-                g.clearRect(0, 0, getWidth(), getHeight());
                 super.paintComponent(g);
                 if (getImage() != null) {
                     g.drawImage(getImage().getManagedImage(), 0, 0, null);
@@ -60,9 +60,7 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
             }
         };
         panel.setOpaque(false);
-        setContentPane(panel);
-
-        setLayout(new BorderLayout());
+        return panel;
     }
 
     private void init() {
@@ -81,65 +79,65 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
         }
     }
 
-    private Memory buffer;
-    private int[] pixels;
-
     private void updateX11() {
-        // FIXME This does not work with setAlpha()/setOpacity(). It always draws the image as if the alpha is 1.0.
         try {
             if (win == null) {
                 win = new X11.Window(Native.getWindowID(alphaWindow));
             }
-            int w = image.getWidth();
-            int h = image.getHeight();
-            alphaWindow.setSize(w, h);
+            updateWindowSize();
 
-
-            if (buffer == null || buffer.size() != (long) w * h * 4) {
-                buffer = new Memory((long) w * h * 4);
-                pixels = new int[w * h];
+            if (buffer == null || buffer.size() != (long) image.getWidth() * image.getHeight() * 4) {
+                buffer = new Memory((long) image.getWidth() * image.getHeight() * 4);
+                pixels = new int[image.getWidth() * image.getHeight()];
             }
 
-            BufferedImage buf = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB_PRE);
-            Graphics g = buf.getGraphics();
-            g.drawImage(image.getManagedImage(), 0, 0, w, h, null);
+            createBufferedImageAndDraw();
 
-            X11.GC gc = x11.XCreateGC(dpy, win, new NativeLong(0), null);
-
-            try {
-                Raster raster = buf.getData();
-                int[] pixel = new int[4];
-
-                for (int y = 0; y < h; y++) {
-                    for (int x = 0; x < w; x++) {
-                        raster.getPixel(x, y, pixel);
-                        int alpha = (pixel[3] & 0xFF) << 24;
-                        int red = pixel[2] & 0xFF;
-                        int green = (pixel[1] & 0xFF) << 8;
-                        int blue = (pixel[0] & 0xFF) << 16;
-                        pixels[y * w + x] = alpha | red | green | blue;
-                    }
-                }
-                X11.XImage image = x11.XCreateImage(dpy, null,
-                        32, X11.ZPixmap,
-                        0, buffer, w, h, 32, w * 4);
-                buffer.write(0, pixels, 0, pixels.length);
-
-                x11.XPutImage(dpy, win, gc, image, 0, 0, 0, 0, w, h);
-                x11.XFree(image.getPointer());
-
-            } finally {
-                if (gc != null) {
-                    x11.XFreeGC(dpy, gc);
-                }
-            }
-
-        } catch (HeadlessException ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         if (!alphaWindow.isVisible()) {
             alphaWindow.setVisible(true);
-            // hack for initial refresh (X11)
-            repaint();
+            repaint(); // hack for initial refresh (X11)
+        }
+    }
+
+    private void updateWindowSize() {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        alphaWindow.setSize(w, h);
+    }
+
+    private void createBufferedImageAndDraw() {
+        int w = image.getWidth();
+        int h = image.getHeight();
+        BufferedImage buf = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB_PRE);
+        Graphics g = buf.getGraphics();
+        g.drawImage(image.getManagedImage(), 0, 0, w, h, null);
+        g.dispose();
+
+        X11.GC gc = x11.XCreateGC(dpy, win, new NativeLong(0), null);
+
+        try {
+            Raster raster = buf.getData();
+            int[] pixel = new int[4];
+
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    raster.getPixel(x, y, pixel);
+                    pixels[y * w + x] = ((pixel[3] & 0xFF) << 24) | (pixel[2] & 0xFF) | ((pixel[1] & 0xFF) << 8) | ((pixel[0] & 0xFF) << 16);
+                }
+            }
+
+            buffer.write(0, pixels, 0, pixels.length);
+            X11.XImage image = x11.XCreateImage(dpy, null, 32, X11.ZPixmap, 0, buffer, w, h, 32, w * 4);
+            x11.XPutImage(dpy, win, gc, image, 0, 0, 0, 0, w, h);
+            x11.XFree(image.getPointer());
+
+        } finally {
+            if (gc != null) {
+                x11.XFreeGC(dpy, gc);
+            }
         }
     }
 
@@ -147,8 +145,7 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
     protected void addImpl(final Component comp, final Object constraints, final int index) {
         super.addImpl(comp, constraints, index);
         if (comp instanceof JComponent) {
-            final JComponent jcomp = (JComponent) comp;
-            jcomp.setOpaque(false);
+            ((JComponent) comp).setOpaque(false);
         }
     }
 
@@ -167,7 +164,6 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
                 x11.XA_ATOM, 32, x11.PropModeReplace, dockAtom.getPointer(), 1);
     }
 
-
     @Override
     public Component asComponent() {
         return this;
@@ -182,8 +178,6 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
     public void paint(final Graphics g) {
         if (g instanceof Graphics2D) {
             Graphics2D g2d = (Graphics2D) g;
-
-            // Higher-quality image
             g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         }
         super.paint(g);
@@ -201,7 +195,6 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
     @Override
     public void updateImage() {
         validate();
-        // repaint();
         updateX11();
     }
 }
