@@ -37,3 +37,8 @@ conf/settings.properties
 **/*.log
 **/*.log.lck
 img/*/**
+
+# Nix related
+.direnv
+.envrc
+result

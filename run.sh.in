@@ -1,0 +1,19 @@
+#! /usr/bin/env bash
+
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/@pname@"
+INSTALL_DIR="@out@/share/@pname@"
+
+mkdir -p "$DATA_DIR"
+cd "$DATA_DIR"
+
+if [ ! -d "$DATA_DIR/conf" ]; then
+    cp -r --no-preserve=mode "$INSTALL_DIR/conf" .
+fi
+
+if [ ! -d "$DATA_DIR/img" ]; then
+    cp -r --no-preserve=mode "$INSTALL_DIR/img" .
+fi
+
+export LD_LIBRARY_PATH="@runtimeLibs@"
+
+exec @java@ -jar "$INSTALL_DIR/Shimeji-ee.jar" "$@"
