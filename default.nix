@@ -12,18 +12,8 @@ maven.buildMavenPackage rec {
 
   src = ./.;
 
-  # manualMvnArtifacts = [
-  #   "com.akathist.maven.plugins.launch4j:launch4j-maven-plugin:2.5.1"
-  #   "org.apache.maven.plugins:maven-surefire-plugin:3.2.5"
-  #   "net.sf.launch4j:launch4j:jar:workdir-linux64:3.50"
-  # ];
-
   mvnHash = "sha256-y71i4RzobDW+AlwwDhotj8SOQDHAcfM/e5oVJH+cwa4=";
 
-  # buildOffline = true;
-
-  # https://stackoverflow.com/questions/32299902/parallel-downloads-of-maven-artifacts
-  # mvnParameters = "-Daether.dependencyCollector.impl=bf -Dmaven.artifact.threads=10 -Dmaven.mirror.url=${mavenMirrorUrl}";
   mvnParameters = "-DskipLaunch4j -Dmaven.antrun.skip=true";
 
   nativeBuildInputs = [ jdk11 ];
@@ -52,5 +42,6 @@ maven.buildMavenPackage rec {
     description = "A fork of Shimeji-ee with newer Java version and better cross-platform support";
     homepage = "https://github.com/SamLukeYes/Shimeji-Desktop";
     license = with lib.licenses; [ bsd3 mit lgpl21Only ];
+    mainProgram = pname;
   };
 }
