@@ -10,7 +10,7 @@
       inherit system;
       overlays = [
         (final: prev: {
-          jdk = final.jetbrains.jdk-no-jcef;
+          jdk = final.jdk11;
         })
       ];
     };
