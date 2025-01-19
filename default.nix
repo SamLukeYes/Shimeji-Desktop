@@ -1,6 +1,6 @@
 {
   lib,
-  jdk11,
+  jdk,
   makeDesktopItem,
   maven,
   xorg,
@@ -16,7 +16,7 @@ maven.buildMavenPackage rec {
 
   mvnParameters = "-DskipLaunch4j -Dmaven.antrun.skip=true";
 
-  nativeBuildInputs = [ jdk11 ];
+  nativeBuildInputs = [ jdk ];
 
   desktopItem = makeDesktopItem {
     desktopName = "Shimeji Desktop";
@@ -28,7 +28,7 @@ maven.buildMavenPackage rec {
   };
 
   installPhase = ''
-    export java=${lib.getExe jdk11}
+    export java=${lib.getExe jdk}
     export runtimeLibs=${lib.makeLibraryPath [ xorg.libX11 xorg.libXrender ]}
     mkdir -p $out/bin $out/share/{pixmaps,$pname}
     cp -r conf/ img/ target/{lib,Shimeji-ee.jar} $out/share/$pname

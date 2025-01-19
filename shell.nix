@@ -11,7 +11,7 @@ mkShell {
   ];
 
   packages = [
-    jdk11
+    jdk
     maven
   ];
 }
