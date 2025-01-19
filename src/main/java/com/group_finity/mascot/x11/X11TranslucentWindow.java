@@ -95,6 +95,9 @@ class X11TranslucentWindow extends JWindow implements TranslucentWindow {
             int h = image.getHeight();
             alphaWindow.setSize(w, h);
 
+            double uiScale = getGraphicsConfiguration().getDefaultTransform().getScaleX();
+            w = (int) (w * uiScale);
+            h = (int) (h * uiScale);
 
             if (buffer == null || buffer.size() != (long) w * h * 4) {
                 buffer = new Memory((long) w * h * 4);
