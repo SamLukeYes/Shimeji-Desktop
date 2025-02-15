@@ -23,7 +23,11 @@
       fhs4gnome = pkgs.buildFHSEnv {
         inherit (defaultPackage) pname version;
         runScript = pkgs.lib.getExe defaultPackage;
-        targetPkgs = ps: with ps; [ gnome-shell ];
+        targetPkgs = ps: with ps; [ (
+          writeShellScriptBin "gnome-shell" ''
+            echo GNOME Shell ${gnome-shell.version}
+          ''
+        ) ];
         extraInstallCommands = ''
           ln -s ${defaultPackage}/share $out/
         '';
