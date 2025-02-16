@@ -9,6 +9,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.WindowUtils;
 import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.VersionHelpers;
+import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef.HWND;
 import com.sun.jna.platform.win32.WinDef.POINT;
 import com.sun.jna.platform.win32.WinError;
@@ -154,7 +155,16 @@ class WindowsEnvironment extends Environment {
             return new Rectangle();
         }
         // Get and return IE rectangle
-        final Rectangle rect = WindowUtils.getWindowLocationAndSize(ie);
+        final Rectangle rect;
+        try {
+            rect = WindowUtils.getWindowLocationAndSize(ie);
+        } catch (Win32Exception e) {
+            if (e.getHR().intValue() != WinError.E_HANDLE) {
+                // The exception was not due to the window handle being invalid, so rethrow the exception
+                throw e;
+            }
+            return new Rectangle();
+        }
         if (dpiAware) {
             double dpiScaleInverse = 96.0 / Toolkit.getDefaultToolkit().getScreenResolution();
             if (dpiScaleInverse != 1) {
@@ -198,7 +208,16 @@ class WindowsEnvironment extends Environment {
                     // Get the work area rectangle
                     final Rectangle workArea = getWorkAreaRect(false);
                     // Get IE rectangle
-                    final Rectangle rect = WindowUtils.getWindowLocationAndSize(hWnd);
+                    final Rectangle rect;
+                    try {
+                        rect = WindowUtils.getWindowLocationAndSize(hWnd);
+                    } catch (Win32Exception e) {
+                        if (e.getHR().intValue() != WinError.E_HANDLE) {
+                            // The exception was not due to the window handle being invalid, so rethrow the exception
+                            throw e;
+                        }
+                        return true;
+                    }
 
                     double dpiScaleInverse = 96.0 / Toolkit.getDefaultToolkit().getScreenResolution();
                     if (firstCallback) {
