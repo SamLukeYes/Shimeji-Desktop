@@ -12,7 +12,7 @@ maven.buildMavenPackage rec {
 
   src = ./.;
 
-  mvnHash = "sha256-y71i4RzobDW+AlwwDhotj8SOQDHAcfM/e5oVJH+cwa4=";
+  mvnHash = "sha256-vxdJJzMPMHyFoQ1BA0kqGYfYi9q+k/+Y0EVrHrgCTvo=";
 
   mvnParameters = "-DskipLaunch4j -Dmaven.antrun.skip=true";
 
@@ -29,7 +29,10 @@ maven.buildMavenPackage rec {
 
   installPhase = ''
     export java=${lib.getExe jdk}
-    export runtimeLibs=${lib.makeLibraryPath [ xorg.libX11 xorg.libXrender ]}
+    export runtimeLibs=${lib.makeLibraryPath (with xorg; [
+      libX11 
+      libXrender
+    ])}
     mkdir -p $out/bin $out/share/{pixmaps,$pname}
     cp -r conf/ img/ target/{lib,Shimeji-ee.jar} $out/share/$pname
     mv $out/share/$pname/img/profile.png $out/share/pixmaps/$pname.png
