@@ -12,7 +12,7 @@ maven.buildMavenPackage rec {
 
   src = ./.;
 
-  mvnHash = "sha256-vxdJJzMPMHyFoQ1BA0kqGYfYi9q+k/+Y0EVrHrgCTvo=";
+  mvnHash = "sha256-nq1agFuHrJmiv2LcQyrQJFaAMiH4NmaRYynM1zMhrAQ=";
 
   mvnParameters = "-DskipLaunch4j -Dmaven.antrun.skip=true";
 
